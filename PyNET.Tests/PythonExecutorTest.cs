@@ -17,8 +17,13 @@ public class PythonExecutorTest
     [Test]
     public void RunCodeString()
     {
+        string[] packages = new[] { "numpy" };
+        PythonExecutor.InstallPackages(packages);
+        
         // Python code to be executed
         string pythonCode = @"
+import numpy as np
+
 print('Hello, world!')
 for i in range(5):
     print('Number:', i)

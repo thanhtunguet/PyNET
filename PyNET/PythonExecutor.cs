@@ -143,4 +143,88 @@ public class PythonExecutor
             return $"-c \"{command}\"";
         }
     }
+
+    static string GetPipExecutablePath()
+    {
+        string command = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "where pip" : "which pip3";
+        try
+        {
+            ProcessStartInfo start = new ProcessStartInfo
+            {
+                FileName = GetShell(),
+                Arguments = GetShellArguments(command),
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (Process process = Process.Start(start))
+            {
+                using (StreamReader reader = process.StandardOutput)
+                {
+                    string result = reader.ReadToEnd().Trim();
+                    if (!string.IsNullOrEmpty(result) && File.Exists(result))
+                    {
+                        return result;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Fall back to checking some common paths or PATH environment variable
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return "python";
+            }
+            else
+            {
+                return "python3";
+            }
+        }
+
+        return string.Empty;
+    }
+
+    public static void InstallPackages(params string[] packageNames)
+    {
+        string pipPath = GetPipExecutablePath();
+        Console.WriteLine($"Installing {pipPath}");
+        if (string.IsNullOrEmpty(pipPath))
+        {
+            Console.WriteLine("Pip is not installed or could not be found.");
+            return;
+        }
+
+        foreach (string packageName in packageNames)
+        {
+            ProcessStartInfo start = new ProcessStartInfo
+            {
+                FileName = pipPath,
+                Arguments = $"install {packageName}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (Process process = Process.Start(start))
+            {
+                using (System.IO.StreamReader reader = process.StandardOutput)
+                {
+                    string result = reader.ReadToEnd();
+                    Console.WriteLine(result);
+                }
+
+                using (System.IO.StreamReader reader = process.StandardError)
+                {
+                    string error = reader.ReadToEnd();
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        Console.WriteLine($"Error: {error}");
+                    }
+                }
+            }
+        }
+    }
 }
